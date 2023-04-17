@@ -1,11 +1,16 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Article struct {
@@ -14,6 +19,9 @@ type Article struct {
 }
 
 func main() {
+	godotenv.Load(".env")
+
+
 	fmt.Printf("welcome to article serch app\n")
 
 	// ユーザーのinput値を保持
@@ -24,7 +32,8 @@ func main() {
 	articleList := FetchArticle(title)
 	fmt.Println(articleList)
 
-	// スプレッドシートに書き込む
+	// csvに書き込む
+	SaveArticle(articleList)
 
 }
 
@@ -50,4 +59,43 @@ func FetchArticle(title string) []Article {
     }
 	
 	return data
+}
+
+func SaveArticle(articleList []Article) {
+	
+	csvData := ConvertToCsv(articleList)
+
+	var fileName string = "csv/articles/" + strconv.FormatInt(time.Now().Unix(), 10) + "file.csv"
+
+	f, err := os.Create(fileName)
+    if err != nil {
+        log.Fatal(err)
+    }
+    w := csv.NewWriter(f)
+
+    w.WriteAll(csvData)
+
+    w.Flush()
+
+    if err := w.Error(); err != nil {
+        log.Fatal(err)
+    }
+}
+
+func ConvertToCsv(articleList []Article) [][]string {
+
+	var csvData [][]string
+
+	// ヘッダーを追加
+	csvData = append(csvData, []string{"title", "url"})
+
+	// csvフォーマットに変換
+	for _, article := range articleList {
+		var currentArticle []string
+		title := article.Title
+		url := article.Url
+		csvData = append(csvData, append(currentArticle, title, url))
+	}
+
+	return csvData
 }
